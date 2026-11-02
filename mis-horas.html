@@ -1,0 +1,770 @@
+<title>Mis Horas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna tipo app móvil, cabecera fija arriba, pestañas fijas abajo; datos en cifras condensadas tipo marcador */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --sunk: #e4e8ee;
+  --ink: #131821;
+  --muted: #5b6575;
+  --line: #d6dce5;
+  --accent: #1d3a8a;
+  --accent-ink: #ffffff;
+  --eld: #c8102e;
+  --uni: #0b8a78;
+  --warn: #9a6400;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1016; --surface: #151b25; --sunk: #1d2531; --ink: #e9edf4; --muted: #95a1b4;
+    --line: #283244; --accent: #8ea8ff; --accent-ink: #0c1016; --eld: #ff5b70; --uni: #33c9b1; --warn: #f0b44c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1016; --surface: #151b25; --sunk: #1d2531; --ink: #e9edf4; --muted: #95a1b4;
+  --line: #283244; --accent: #8ea8ff; --accent-ink: #0c1016; --eld: #ff5b70; --uni: #33c9b1; --warn: #f0b44c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.4; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top-in { max-width: 560px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; }
+.brand span { color: var(--muted); font-weight: 500; }
+.status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.status i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.status[data-s="saved"] i { background: var(--uni); }
+.status[data-s="saving"] i { background: var(--warn); }
+.status[data-s="error"] i, .status[data-s="readonly"] i { background: var(--eld); }
+
+main {
+  max-width: 560px; margin: 0 auto;
+  padding-block: 14px 110px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+}
+.tabs-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+.tab { background: none; border: 0; padding: 9px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--accent); }
+
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bar h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 26px; text-wrap: balance; }
+.navbtns { display: flex; gap: 6px; }
+.ibtn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 18px; line-height: 1; }
+.pill { height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px; }
+
+.banner { background: var(--surface); border: 1px dashed var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.banner b { color: var(--warn); }
+
+.totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tot { background: var(--surface); border-radius: 12px; padding: 10px 12px; border-top: 4px solid var(--c); min-width: 0; }
+.tot .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.tot b { font-family: var(--display); font-size: 30px; font-weight: 700; line-height: 1.1; display: block; font-variant-numeric: tabular-nums; }
+.tot b small { font-size: 16px; font-weight: 600; color: var(--muted); }
+.tot .sub { font-size: 12px; color: var(--muted); }
+
+.cal { background: var(--surface); border-radius: 14px; padding: 8px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.cal .dw { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); padding: 2px 0 4px; letter-spacing: .06em; }
+.day { position: relative; border: 0; background: var(--sunk); border-radius: 8px; min-height: 58px; padding: 4px 3px 4px 5px; text-align: left; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.day .n { font-family: var(--display); font-weight: 600; font-size: 15px; line-height: 1.1; }
+.day .h { font-family: var(--display); font-weight: 600; font-size: 12px; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.day .h::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 2px; background: currentColor; margin-right: 3px; vertical-align: 1px; }
+.day.out { background: transparent; opacity: .45; }
+.day.free .n { color: var(--muted); }
+.day.today { box-shadow: inset 0 0 0 2px var(--ink); }
+.day.sel { background: var(--accent); color: var(--accent-ink); }
+.day.sel .h, .day.sel .n { color: var(--accent-ink) !important; }
+.day.edited::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+.day.sel.edited::after { background: var(--accent-ink); }
+.legend { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; padding: 0 2px; }
+.legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); margin-right: 5px; }
+
+.card { background: var(--surface); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.card h2 { margin: 0; font-family: var(--display); font-size: 22px; font-weight: 700; }
+.card h2 small { font-family: var(--body); font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+.dhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.dhead .t { font-family: var(--display); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.job { border-left: 4px solid var(--c); padding-left: 10px; display: flex; flex-direction: column; gap: 8px; }
+.jh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.jh b { font-weight: 600; }
+.jh .jt { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; }
+.tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 99px; background: var(--sunk); color: var(--muted); }
+.tag.mod { color: var(--warn); }
+.blk { display: flex; align-items: center; gap: 6px; }
+.blk input[type="time"] { width: 100%; max-width: 118px; min-width: 0; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 0 8px; font-variant-numeric: tabular-nums; }
+.blk .dur { font-family: var(--display); font-weight: 600; color: var(--muted); min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+.blk .x { width: 34px; height: 34px; border: 0; background: none; color: var(--muted); font-size: 20px; border-radius: 8px; flex: none; }
+.acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.lbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.lbtn.add { color: var(--accent); border-style: dashed; }
+.empty { font-size: 14px; color: var(--muted); }
+textarea { width: 100%; min-height: 56px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 8px 10px; resize: vertical; }
+label.f { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: flex; flex-direction: column; gap: 5px; }
+
+.big { display: flex; align-items: baseline; gap: 8px; }
+.big b { font-family: var(--display); font-size: 52px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.big span { color: var(--muted); }
+.split { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--sunk); }
+.split i { display: block; height: 100%; }
+.rows { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.row .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
+.row .v { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.row .p { color: var(--muted); font-size: 13px; min-width: 42px; text-align: right; }
+
+.chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; padding: 0; min-width: 0; }
+.col .v { font-family: var(--display); font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; }
+.col .track { width: 100%; max-width: 38px; height: 150px; background: var(--sunk); border-radius: 6px; display: flex; flex-direction: column-reverse; overflow: hidden; }
+.col .track i { display: block; width: 100%; }
+.col .d { font-size: 12px; color: var(--muted); font-weight: 600; }
+.col.today .d { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+.dlist { display: flex; flex-direction: column; }
+.dl { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; width: 100%; }
+.dl:first-child { border-top: 0; }
+.dl .dd { font-family: var(--display); font-weight: 600; font-size: 16px; }
+.dl .dd small { display: block; font-family: var(--body); font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.dl .bl { font-size: 13px; color: var(--muted); min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dl .bl span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 2px; background: var(--c); margin-right: 6px; }
+.dl .tv { font-family: var(--display); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+
+.kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.kv div { display: flex; flex-direction: column; min-width: 0; }
+.kv span { font-size: 12px; color: var(--muted); }
+.kv b { font-family: var(--display); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.up { color: var(--uni); } .down { color: var(--eld); }
+.tblwrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 4px 6px 6px; }
+th:first-child, td:first-child { text-align: left; }
+td { text-align: right; padding: 7px 6px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.n { font-family: var(--display); font-weight: 600; font-size: 16px; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
+
+.pbtn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px; padding: 12px 16px; font-weight: 600; font-size: 15px; }
+.pbtn:disabled { opacity: .45; cursor: default; }
+.sbtn { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 16px; font-weight: 600; }
+
+.hjob { border-top: 4px solid var(--c); }
+.hfields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hfields input, .datein { width: 100%; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 0 10px; font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 500; }
+.wd { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: start; padding-top: 8px; border-top: 1px solid var(--line); }
+.wd > b { font-family: var(--display); font-size: 17px; padding-top: 8px; }
+.wd .bs { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.wd .none { font-size: 13px; color: var(--muted); padding-top: 9px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.wtot { font-size: 13px; color: var(--muted); }
+.wtot b { color: var(--ink); font-family: var(--display); font-size: 17px; }
+.savebar { position: sticky; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 24px rgba(10, 20, 40, .12); }
+.savebar .btns { display: flex; gap: 8px; }
+.savebar .btns .pbtn { flex: 1; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.hist { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: no-preference) {
+  .day, .tab, .lbtn, .pbtn { transition: background-color .15s, color .15s; }
+  .col .track i { transition: height .25s ease; }
+}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">Mis Horas <span id="who"></span></div>
+    <div class="status" id="status" data-s="loading"><i></i><span>Cargando…</span></div>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<nav class="tabs" aria-label="Secciones">
+  <div class="tabs-in">
+    <button class="tab" data-act="tab" data-v="cal" id="t-cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendario</button>
+    <button class="tab" data-act="tab" data-v="sem" id="t-sem"><svg viewBox="0 0 24 24"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/></svg>Semana</button>
+    <button class="tab" data-act="tab" data-v="mes" id="t-mes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg>Mes</button>
+    <button class="tab" data-act="tab" data-v="hor" id="t-hor"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Horario</button>
+  </div>
+</nav>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DOW = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const DOW_LONG = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const JOB_COLOR = { eld: 'var(--eld)', uni: 'var(--uni)' };
+
+const pad = n => String(n).padStart(2, '0');
+const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const isoDow = d => (d.getDay() + 6) % 7 + 1;
+const mondayOf = d => addDays(d, -(isoDow(d) - 1));
+const monthId = k => 'm-' + k.slice(0, 7);
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const blockMin = b => { if (!b.s || !b.e) return 0; let d = toMin(b.e) - toMin(b.s); if (d < 0) d += 1440; return d; };
+const hm = m => { m = Math.round(m); const h = Math.floor(m / 60), r = m % 60; return r ? `${h}:${pad(r)}` : `${h}`; };
+const fmtH = m => hm(m) + ' h';
+const clone = o => JSON.parse(JSON.stringify(o));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const todayKey = () => keyOf(new Date());
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const longDate = k => { const d = fromKey(k); return `${DOW_LONG[isoDow(d) - 1]} ${d.getDate()} de ${MESES[d.getMonth()]}`; };
+const shortDate = k => { const d = fromKey(k); return `${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)}`; };
+
+function exampleConfig() {
+  const week = { eld: {}, uni: {} };
+  for (let i = 1; i <= 5; i++) {
+    week.eld[i] = [{ s: '09:00', e: '14:00' }];
+    week.uni[i] = [{ s: '16:30', e: '20:30' }];
+  }
+  week.eld[6] = [{ s: '10:00', e: '13:00' }];
+  return {
+    v: 1, confirmed: false,
+    jobs: [
+      { id: 'eld', name: 'CD Eldense', role: 'Jefe de rendimiento' },
+      { id: 'uni', name: 'Unity Sports', role: 'CEO' }
+    ],
+    schedules: [{ from: '2000-01-01', week }]
+  };
+}
+
+const now = new Date();
+const S = {
+  config: exampleConfig(), configStored: false, months: {},
+  view: 'cal', sel: todayKey(),
+  calMonth: new Date(now.getFullYear(), now.getMonth(), 1),
+  weekStart: mondayOf(now),
+  mesMonth: new Date(now.getFullYear(), now.getMonth(), 1),
+  draft: null, draftDirty: false
+};
+try { const v = localStorage.getItem('mishoras-view'); if (['cal', 'sem', 'mes', 'hor'].includes(v)) S.view = v; } catch (e) {}
+
+/* ---------- cálculo de horas ---------- */
+function scheduleFor(k) {
+  const list = [...S.config.schedules].sort((a, b) => a.from.localeCompare(b.from));
+  let cur = list[0];
+  for (const s of list) if (s.from <= k) cur = s;
+  return cur;
+}
+const dayEntry = k => S.months[monthId(k)]?.days?.[k];
+const isOverridden = (k, j) => Array.isArray(dayEntry(k)?.[j]);
+function blocksFor(k, j) {
+  const e = dayEntry(k);
+  if (e && Array.isArray(e[j])) return e[j];
+  return scheduleFor(k).week[j]?.[isoDow(fromKey(k))] || [];
+}
+const minFor = (k, j) => blocksFor(k, j).reduce((a, b) => a + blockMin(b), 0);
+const jobs = () => S.config.jobs;
+
+function rangeStats(startDate, endDate, { onlyMonth } = {}) {
+  const tk = todayKey(), out = {};
+  for (const j of jobs()) out[j.id] = { planned: 0, done: 0, days: 0 };
+  for (let d = startDate; d <= endDate; d = addDays(d, 1)) {
+    if (onlyMonth != null && d.getMonth() !== onlyMonth) continue;
+    const k = keyOf(d);
+    for (const j of jobs()) {
+      const m = minFor(k, j.id);
+      out[j.id].planned += m;
+      if (k <= tk) { out[j.id].done += m; if (m > 0) out[j.id].days++; }
+    }
+  }
+  return out;
+}
+const monthStats = first => rangeStats(first, new Date(first.getFullYear(), first.getMonth() + 1, 0));
+
+/* ---------- almacenamiento ---------- */
+const Store = { mode: 'init', ready: false, col: null };
+const pending = {}, busy = {}, timers = {};
+let deferredRender = false;
+
+function setStatus(s, text) {
+  const el = document.getElementById('status');
+  const labels = { loading: 'Cargando…', saving: 'Guardando…', saved: 'Guardado', local: 'Solo en este dispositivo', error: 'No se pudo guardar', readonly: 'Solo lectura', offline: 'Sin conexión todavía' };
+  el.dataset.s = s;
+  el.querySelector('span').textContent = text || labels[s] || '';
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+function persist(id, body, delay = 450) {
+  if (!Store.ready) return;
+  if (id !== 'config' && !S.configStored) { S.configStored = true; persist('config', S.config, 0); }
+  pending[id] = body;
+  clearTimeout(timers[id]);
+  timers[id] = setTimeout(() => flush(id), delay);
+  setStatus('saving');
+}
+async function flush(id) {
+  if (busy[id]) return;
+  busy[id] = true;
+  while (pending[id]) {
+    const body = pending[id]; pending[id] = null;
+    try {
+      if (Store.mode === 'db') await Store.col.doc(id).set(body);
+      else saveLocal();
+    } catch (e) {
+      handleWriteError(e);
+    }
+  }
+  busy[id] = false;
+  if (!Object.values(pending).some(Boolean) && !Object.values(busy).some(Boolean) && document.getElementById('status').dataset.s === 'saving') {
+    setStatus(Store.mode === 'db' ? 'saved' : 'local');
+  }
+}
+function handleWriteError(e) {
+  const code = e && e.code;
+  if (code === 'invalid_argument') { setStatus('readonly'); toast('No tienes permiso para guardar cambios aquí.'); }
+  else if (code === 'quota_exceeded') { setStatus('error'); toast('Se ha llenado el espacio de datos. Avísame y lo ampliamos.'); }
+  else { setStatus('error'); toast('No se pudo guardar. Revisa la conexión y vuelve a intentarlo.'); }
+}
+function saveLocal() {
+  localStorage.setItem('mishoras-data', JSON.stringify({ config: S.config, months: S.months }));
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('mishoras-data');
+    if (raw) { const d = JSON.parse(raw); if (d.config) { S.config = d.config; S.configStored = true; } S.months = d.months || {}; }
+  } catch (e) {}
+}
+
+async function initStore() {
+  let db = null, user = null, uid = null;
+  if (window.claude && typeof window.claude.use === 'function') {
+    try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) {}
+    if (user) uid = await user.id();
+  }
+  if (db && uid) {
+    Store.mode = 'db';
+    Store.col = db.collection('data/users/' + uid);
+    const loadTimer = setTimeout(() => { if (!Store.ready) setStatus('offline'); }, 10000);
+    Store.col.onSnapshot(snap => {
+      if (!snap.metadata.fromCache) clearTimeout(loadTimer);
+      let cfg = null; const months = {};
+      for (const d of snap.docs) {
+        if (d.id === 'config') cfg = d.data();
+        else if (d.id.startsWith('m-')) months[d.id] = d.data();
+      }
+      for (const id in pending) if (pending[id]) { if (id === 'config') cfg = pending[id]; else months[id] = pending[id]; }
+      if (cfg) { S.config = clone(cfg); S.configStored = true; }
+      S.months = clone(months);
+      if (!S.draftDirty) S.draft = null;
+      if (!Store.ready) { Store.ready = true; }
+      if (!snap.metadata.fromCache && !snap.metadata.hasPendingWrites && !Object.values(pending).some(Boolean)) setStatus('saved');
+      safeRender();
+    }, err => {
+      clearTimeout(loadTimer);
+      setStatus('error', 'Sin conexión con tus datos');
+    });
+  } else {
+    Store.mode = 'local';
+    loadLocal();
+    Store.ready = true;
+    setStatus('local');
+    S.draft = null;
+    render();
+  }
+}
+
+function safeRender() {
+  const a = document.activeElement;
+  if (a && a.closest && a.closest('main') && /INPUT|TEXTAREA/.test(a.tagName)) { deferredRender = true; return; }
+  render();
+}
+document.addEventListener('focusout', () => { if (deferredRender) { deferredRender = false; setTimeout(render, 0); } });
+
+/* ---------- ediciones ---------- */
+function setDay(k, j, blocks) {
+  const mid = monthId(k);
+  const m = clone(S.months[mid] || { days: {} });
+  m.days = m.days || {};
+  const e = { ...(m.days[k] || {}) };
+  if (blocks === null) delete e[j]; else e[j] = blocks;
+  const keys = Object.keys(e).filter(x => !(x === 'note' && !e.note));
+  if (!keys.length) delete m.days[k]; else m.days[k] = e;
+  S.months[mid] = m;
+  persist(mid, m);
+  render();
+}
+function editDay(k, j, fn) { const cur = clone(blocksFor(k, j)); fn(cur); setDay(k, j, cur); }
+function setNote(k, text) {
+  const mid = monthId(k);
+  const m = clone(S.months[mid] || { days: {} });
+  m.days = m.days || {};
+  const e = { ...(m.days[k] || {}) };
+  if (text) e.note = text; else delete e.note;
+  if (!Object.keys(e).length) delete m.days[k]; else m.days[k] = e;
+  S.months[mid] = m;
+  persist(mid, m, 900);
+}
+function nextBlock(list) {
+  const last = list[list.length - 1];
+  if (!last || !last.e) return { s: '09:00', e: '10:00' };
+  const st = toMin(last.e) % 1440, en = (st + 60) % 1440;
+  return { s: `${pad(Math.floor(st / 60))}:${pad(st % 60)}`, e: `${pad(Math.floor(en / 60))}:${pad(en % 60)}` };
+}
+
+/* ---------- vistas ---------- */
+function render() {
+  for (const v of ['cal', 'sem', 'mes', 'hor']) {
+    const t = document.getElementById('t-' + v);
+    if (v === S.view) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  }
+  const main = document.getElementById('main');
+  main.innerHTML = { cal: viewCal, sem: viewSem, mes: viewMes, hor: viewHor }[S.view]();
+}
+
+function exampleBanner() {
+  if (S.config.confirmed) return '';
+  return `<div class="banner"><span><b>Horario de ejemplo.</b> Pon tu horario real y las horas se apuntarán solas cada día.</span><button class="lbtn" data-act="tab" data-v="hor">Configurar</button></div>`;
+}
+
+function totalsTiles(stats, mode) {
+  return `<div class="totals">${jobs().map(j => {
+    const s = stats[j.id];
+    const main = mode === 'month' ? s.done : s.planned;
+    const sub = mode === 'month' ? `hasta hoy · ${fmtH(s.planned)} en el mes` : `${s.days} días con horas`;
+    return `<div class="tot" style="--c:${JOB_COLOR[j.id]}"><span class="lbl">${esc(j.name)}</span><b>${hm(main)}<small> h</small></b><span class="sub">${sub}</span></div>`;
+  }).join('')}</div>`;
+}
+
+function viewCal() {
+  const first = S.calMonth, y = first.getFullYear(), mo = first.getMonth();
+  const last = new Date(y, mo + 1, 0);
+  const start = mondayOf(first), end = addDays(last, 7 - isoDow(last));
+  const tk = todayKey();
+  let cells = DOW.map(d => `<div class="dw">${d}</div>`).join('');
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const k = keyOf(d), out = d.getMonth() !== mo;
+    const hs = jobs().map(j => [j.id, minFor(k, j.id)]).filter(x => x[1] > 0);
+    const edited = !out && jobs().some(j => isOverridden(k, j.id));
+    const cls = ['day', out && 'out', k === tk && 'today', k === S.sel && 'sel', edited && 'edited', !hs.length && 'free'].filter(Boolean).join(' ');
+    const label = `${longDate(k)}: ${hs.length ? hs.map(([id, m]) => `${jobs().find(j => j.id === id).name} ${fmtH(m)}`).join(', ') : 'sin horas'}`;
+    cells += `<button class="${cls}" data-act="sel" data-k="${k}" aria-label="${esc(label)}"><span class="n">${d.getDate()}</span>${out ? '' : hs.map(([id, m]) => `<span class="h" style="color:${JOB_COLOR[id]}">${hm(m)}</span>`).join('')}</button>`;
+  }
+  return `
+    ${exampleBanner()}
+    <div class="bar"><h1>${cap(MESES[mo])} ${y}</h1><div class="navbtns"><button class="pill" data-act="today">Hoy</button><button class="ibtn" data-act="calprev" aria-label="Mes anterior">‹</button><button class="ibtn" data-act="calnext" aria-label="Mes siguiente">›</button></div></div>
+    ${totalsTiles(monthStats(first), 'month')}
+    <div class="cal">${cells}</div>
+    <div class="legend"><span><i></i>Día con cambios sobre el horario</span><span>Toca un día para ajustarlo</span></div>
+    ${dayDetail(S.sel)}`;
+}
+
+function dayDetail(k) {
+  const total = jobs().reduce((a, j) => a + minFor(k, j.id), 0);
+  const note = dayEntry(k)?.note || '';
+  const jobsHtml = jobs().map(j => {
+    const bl = blocksFor(k, j.id), ov = isOverridden(k, j.id), m = minFor(k, j.id);
+    const tag = ov ? (bl.length ? '<span class="tag mod">Modificado</span>' : '<span class="tag mod">Libre</span>') : '<span class="tag">Horario habitual</span>';
+    const rows = bl.length ? bl.map((b, i) => `
+      <div class="blk">
+        <input type="time" id="b-${j.id}-${i}-s" aria-label="Inicio" value="${esc(b.s)}" data-act="bt" data-j="${j.id}" data-i="${i}" data-f="s">
+        <span>–</span>
+        <input type="time" id="b-${j.id}-${i}-e" aria-label="Fin" value="${esc(b.e)}" data-act="bt" data-j="${j.id}" data-i="${i}" data-f="e">
+        <span class="dur">${hm(blockMin(b))}</span>
+        <button class="x" data-act="bdel" data-j="${j.id}" data-i="${i}" aria-label="Quitar tramo">×</button>
+      </div>`).join('') : '<div class="empty">Sin horas este día.</div>';
+    return `<div class="job" style="--c:${JOB_COLOR[j.id]}">
+      <div class="jh"><b>${esc(j.name)}</b>${tag}<span class="jt">${fmtH(m)}</span></div>
+      ${rows}
+      <div class="acts">
+        <button class="lbtn add" data-act="badd" data-j="${j.id}">+ Tramo</button>
+        ${bl.length ? `<button class="lbtn" data-act="off" data-j="${j.id}">No trabajé</button>` : ''}
+        ${ov ? `<button class="lbtn" data-act="reset" data-j="${j.id}">Volver al horario</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<section class="card" aria-label="Detalle del día">
+    <div class="dhead"><h2>${cap(longDate(k))}</h2><span class="t">${fmtH(total)}</span></div>
+    ${jobsHtml}
+    <label class="f" for="note">Nota del día<textarea id="note" data-act="note" placeholder="Partido fuera, reunión con patrocinador…">${esc(note)}</textarea></label>
+    ${total > 0 ? `<div class="acts"><button class="lbtn" data-act="alloff">Día libre en los dos trabajos</button></div>` : ''}
+  </section>`;
+}
+
+function viewSem() {
+  const ws = S.weekStart, we = addDays(ws, 6), tk = todayKey();
+  const days = [...Array(7)].map((_, i) => keyOf(addDays(ws, i)));
+  const per = days.map(k => Object.fromEntries(jobs().map(j => [j.id, minFor(k, j.id)])));
+  const dayTot = per.map(p => Object.values(p).reduce((a, b) => a + b, 0));
+  const total = dayTot.reduce((a, b) => a + b, 0);
+  const jt = Object.fromEntries(jobs().map(j => [j.id, per.reduce((a, p) => a + p[j.id], 0)]));
+  const scale = Math.max(600, ...dayTot);
+  const title = ws.getMonth() === we.getMonth()
+    ? `${ws.getDate()}–${we.getDate()} ${MESES[we.getMonth()].slice(0, 3)}`
+    : `${shortDate(days[0])} – ${shortDate(days[6])}`;
+  const isThis = keyOf(mondayOf(new Date())) === days[0];
+  const bars = days.map((k, i) => `
+    <button class="col${k === tk ? ' today' : ''}" data-act="go" data-k="${k}" aria-label="${esc(longDate(k))}: ${fmtH(dayTot[i])}">
+      <span class="v">${dayTot[i] ? hm(dayTot[i]) : '–'}</span>
+      <span class="track">${jobs().map(j => `<i style="height:${per[i][j.id] / scale * 100}%;background:${JOB_COLOR[j.id]}"></i>`).join('')}</span>
+      <span class="d">${DOW[i]} ${fromKey(k).getDate()}</span>
+    </button>`).join('');
+  const list = days.map((k, i) => {
+    const parts = jobs().map(j => { const bl = blocksFor(k, j.id); return bl.length ? `<span style="--c:${JOB_COLOR[j.id]}">${bl.map(b => `${b.s}–${b.e}`).join(', ')}</span>` : ''; }).join('');
+    const note = dayEntry(k)?.note;
+    return `<button class="dl" data-act="go" data-k="${k}">
+      <span class="dd"><small>${DOW_LONG[i].slice(0, 3)}</small>${fromKey(k).getDate()}</span>
+      <span class="bl">${parts || '<span style="--c:transparent">Libre</span>'}${note ? `<em>${esc(note)}</em>` : ''}</span>
+      <span class="tv">${dayTot[i] ? hm(dayTot[i]) : '–'}</span>
+    </button>`;
+  }).join('');
+  return `
+    ${exampleBanner()}
+    <div class="bar"><h1>${isThis ? 'Esta semana' : title}</h1><div class="navbtns">${isThis ? '' : '<button class="pill" data-act="wknow">Hoy</button>'}<button class="ibtn" data-act="wkprev" aria-label="Semana anterior">‹</button><button class="ibtn" data-act="wknext" aria-label="Semana siguiente">›</button></div></div>
+    <section class="card">
+      <div class="big"><b>${hm(total)}</b><span>horas · ${isThis ? title : 'semana'}</span></div>
+      <div class="split">${jobs().map(j => `<i style="width:${total ? jt[j.id] / total * 100 : 0}%;background:${JOB_COLOR[j.id]}"></i>`).join('')}</div>
+      <div class="rows">${jobs().map(j => `<div class="row" style="--c:${JOB_COLOR[j.id]}"><span class="sw"></span>${esc(j.name)}<span class="v">${fmtH(jt[j.id])}</span><span class="p">${total ? Math.round(jt[j.id] / total * 100) : 0}%</span></div>`).join('')}</div>
+    </section>
+    <section class="card"><div class="chart">${bars}</div></section>
+    <section class="card"><div class="dlist">${list}</div></section>`;
+}
+
+function viewMes() {
+  const first = S.mesMonth, y = first.getFullYear(), mo = first.getMonth();
+  const last = new Date(y, mo + 1, 0);
+  const st = monthStats(first);
+  const prev = monthStats(new Date(y, mo - 1, 1));
+  const tk = todayKey();
+  const isCurrent = keyOf(first).slice(0, 7) === tk.slice(0, 7);
+  const isPast = keyOf(last) < tk;
+  const totPlanned = jobs().reduce((a, j) => a + st[j.id].planned, 0);
+  const totDone = jobs().reduce((a, j) => a + st[j.id].done, 0);
+  const prevTot = jobs().reduce((a, j) => a + prev[j.id].planned, 0);
+  const diff = totPlanned - prevTot;
+
+  const cards = jobs().map(j => {
+    const s = st[j.id], p = prev[j.id];
+    const d = s.planned - p.planned;
+    return `<section class="card" style="border-top:4px solid ${JOB_COLOR[j.id]}">
+      <h2>${esc(j.name)}<small>${esc(j.role)}</small></h2>
+      <div class="kv">
+        <div><span>${isCurrent ? 'Hechas hasta hoy' : isPast ? 'Horas del mes' : 'Previstas'}</span><b>${fmtH(isCurrent || isPast ? s.done : s.planned)}</b></div>
+        <div><span>Total del mes</span><b>${fmtH(s.planned)}</b></div>
+        <div><span>Días trabajados</span><b>${s.days}</b></div>
+        <div><span>Media por día trabajado</span><b>${s.days ? fmtH(s.done / s.days) : '–'}</b></div>
+        <div><span>vs. ${MESES[(mo + 11) % 12]}</span><b class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d === 0 ? '=' : (d > 0 ? '+' : '−') + fmtH(Math.abs(d))}</b></div>
+        <div><span>Semana media</span><b>${fmtH(s.planned / (last.getDate() / 7))}</b></div>
+      </div>
+    </section>`;
+  }).join('');
+
+  let rows = '';
+  for (let w = mondayOf(first); w <= last; w = addDays(w, 7)) {
+    const ws = w < first ? first : w;
+    const weRaw = addDays(w, 6), we = weRaw > last ? last : weRaw;
+    const s = rangeStats(ws, we);
+    const t = jobs().reduce((a, j) => a + s[j.id].planned, 0);
+    rows += `<tr><td>${ws.getDate()}–${we.getDate()}</td>${jobs().map(j => `<td class="n">${hm(s[j.id].planned)}</td>`).join('')}<td class="n">${hm(t)}</td></tr>`;
+  }
+
+  return `
+    ${exampleBanner()}
+    <div class="bar"><h1>${cap(MESES[mo])} ${y}</h1><div class="navbtns"><button class="ibtn" data-act="mprev" aria-label="Mes anterior">‹</button><button class="ibtn" data-act="mnext" aria-label="Mes siguiente">›</button></div></div>
+    <section class="card">
+      <div class="big"><b>${hm(isCurrent ? totDone : totPlanned)}</b><span>${isCurrent ? `h hasta hoy · ${fmtH(totPlanned)} en el mes` : 'horas en total'}</span></div>
+      <div class="split">${jobs().map(j => `<i style="width:${totPlanned ? st[j.id].planned / totPlanned * 100 : 0}%;background:${JOB_COLOR[j.id]}"></i>`).join('')}</div>
+      <div class="rows">${jobs().map(j => `<div class="row" style="--c:${JOB_COLOR[j.id]}"><span class="sw"></span>${esc(j.name)}<span class="v">${fmtH(st[j.id].planned)}</span><span class="p">${totPlanned ? Math.round(st[j.id].planned / totPlanned * 100) : 0}%</span></div>`).join('')}</div>
+      <p class="hint">${MESES[(mo + 11) % 12][0].toUpperCase() + MESES[(mo + 11) % 12].slice(1)}: ${fmtH(prevTot)} (${diff === 0 ? 'igual' : (diff > 0 ? '+' : '−') + fmtH(Math.abs(diff))})</p>
+    </section>
+    ${cards}
+    <section class="card">
+      <h2>Por semanas</h2>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Días</th>${jobs().map(j => `<th>${esc(j.name)}</th>`).join('')}<th>Total</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td>Mes</td>${jobs().map(j => `<td class="n">${hm(st[j.id].planned)}</td>`).join('')}<td class="n">${hm(totPlanned)}</td></tr></tfoot>
+      </table></div>
+      <button class="sbtn" data-act="export">Exportar ${MESES[mo]} a Excel (CSV)</button>
+    </section>`;
+}
+
+function ensureDraft() {
+  if (S.draft) return;
+  const tk = todayKey();
+  S.draft = { jobs: clone(S.config.jobs), week: clone(scheduleFor(tk).week), from: tk };
+  S.draftDirty = false;
+}
+function viewHor() {
+  ensureDraft();
+  const D = S.draft;
+  const cards = D.jobs.map(j => {
+    const wk = D.week[j.id] || {};
+    let weekTot = 0;
+    const days = DOW.map((d, i) => {
+      const bl = wk[i + 1] || [];
+      weekTot += bl.reduce((a, b) => a + blockMin(b), 0);
+      const inner = bl.length ? bl.map((b, bi) => `
+        <div class="blk">
+          <input type="time" id="h-${j.id}-${i + 1}-${bi}-s" aria-label="${DOW_LONG[i]} inicio" value="${esc(b.s)}" data-act="ht" data-j="${j.id}" data-d="${i + 1}" data-i="${bi}" data-f="s">
+          <span>–</span>
+          <input type="time" id="h-${j.id}-${i + 1}-${bi}-e" aria-label="${DOW_LONG[i]} fin" value="${esc(b.e)}" data-act="ht" data-j="${j.id}" data-d="${i + 1}" data-i="${bi}" data-f="e">
+          <button class="x" data-act="hdel" data-j="${j.id}" data-d="${i + 1}" data-i="${bi}" aria-label="Quitar tramo">×</button>
+        </div>`).join('') + `<div><button class="lbtn add" data-act="hadd" data-j="${j.id}" data-d="${i + 1}">+ Tramo</button></div>`
+        : `<div class="none">Libre <button class="lbtn add" data-act="hadd" data-j="${j.id}" data-d="${i + 1}">+ Añadir horas</button></div>`;
+      return `<div class="wd"><b>${d}</b><div class="bs">${inner}</div></div>`;
+    }).join('');
+    return `<section class="card hjob" style="--c:${JOB_COLOR[j.id]}">
+      <div class="hfields">
+        <label class="f" for="jn-${j.id}">Trabajo<input id="jn-${j.id}" value="${esc(j.name)}" data-act="jname" data-j="${j.id}"></label>
+        <label class="f" for="jr-${j.id}">Puesto<input id="jr-${j.id}" value="${esc(j.role)}" data-act="jrole" data-j="${j.id}"></label>
+      </div>
+      <div class="wtot">Horas por semana: <b>${fmtH(weekTot)}</b></div>
+      ${days}
+      <div class="acts"><button class="lbtn" data-act="hcopy" data-j="${j.id}">Copiar el lunes de martes a viernes</button></div>
+    </section>`;
+  }).join('');
+  const hist = [...S.config.schedules].sort((a, b) => b.from.localeCompare(a.from));
+  return `
+    <div class="bar"><h1>Horario semanal</h1></div>
+    <p class="hint">Las horas de este horario se apuntan solas cada día. Si un día cambia algo, ajústalo en el calendario.</p>
+    ${cards}
+    <div class="savebar">
+      ${S.config.confirmed ? `<label class="f" for="from">Aplicar desde<input type="date" class="datein" id="from" value="${esc(D.from)}" data-act="from"></label>
+      <p class="hint">Los días anteriores conservan el horario que tenían.</p>` : '<p class="hint">Se aplicará a todas las fechas.</p>'}
+      <div class="btns">
+        ${S.draftDirty ? '<button class="sbtn" data-act="discard">Descartar</button>' : ''}
+        <button class="pbtn" data-act="savesched" ${S.draftDirty || !S.config.confirmed ? '' : 'disabled'}>${S.config.confirmed ? 'Guardar cambios' : 'Guardar mi horario'}</button>
+      </div>
+    </div>
+    ${S.config.confirmed && hist.length > 1 ? `<section class="card"><h2>Historial</h2><div class="hist">${hist.map(h => `<span>Desde ${h.from === '2000-01-01' ? 'el principio' : longDate(h.from) + ' ' + h.from.slice(0, 4)}</span>`).join('')}</div></section>` : ''}`;
+}
+
+/* ---------- exportar ---------- */
+async function exportMonth() {
+  const first = S.mesMonth, y = first.getFullYear(), mo = first.getMonth();
+  const last = new Date(y, mo + 1, 0);
+  const lines = [['Fecha', 'Día', 'Trabajo', 'Inicio', 'Fin', 'Horas', 'Nota'].join(';')];
+  const cell = v => /[;"\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v;
+  for (let d = first; d <= last; d = addDays(d, 1)) {
+    const k = keyOf(d), note = dayEntry(k)?.note || '';
+    for (const j of jobs()) for (const b of blocksFor(k, j.id)) {
+      lines.push([k.split('-').reverse().join('/'), DOW_LONG[isoDow(d) - 1], j.name, b.s, b.e, (blockMin(b) / 60).toFixed(2).replace('.', ','), note].map(cell).join(';'));
+    }
+  }
+  lines.push('');
+  for (const j of jobs()) lines.push([`Total ${j.name}`, '', '', '', '', (monthStats(first)[j.id].planned / 60).toFixed(2).replace('.', ','), ''].map(cell).join(';'));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' });
+  let dl = null;
+  try { dl = window.claude ? await window.claude.use('downloads') : null; } catch (e) {}
+  if (!dl) { toast('Exportar no está disponible en esta vista.'); return; }
+  try { await dl.save({ filename: `horas-${y}-${pad(mo + 1)}.csv`, data: blob }); }
+  catch (e) { if (e?.code !== 'declined') toast('No se pudo generar el archivo.'); }
+}
+
+/* ---------- eventos ---------- */
+function needReady() { if (!Store.ready) { toast('Cargando tus datos…'); return false; } return true; }
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || b.tagName === 'INPUT' || b.tagName === 'TEXTAREA') return;
+  const { act, j, k, v } = b.dataset;
+  const i = +b.dataset.i, d = b.dataset.d;
+  switch (act) {
+    case 'tab':
+      S.view = v; try { localStorage.setItem('mishoras-view', v); } catch (er) {}
+      render(); window.scrollTo(0, 0); break;
+    case 'today': { const t = new Date(); S.calMonth = new Date(t.getFullYear(), t.getMonth(), 1); S.sel = todayKey(); render(); break; }
+    case 'calprev': S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() - 1, 1); render(); break;
+    case 'calnext': S.calMonth = new Date(S.calMonth.getFullYear(), S.calMonth.getMonth() + 1, 1); render(); break;
+    case 'sel': {
+      S.sel = k; const dd = fromKey(k);
+      if (dd.getMonth() !== S.calMonth.getMonth()) S.calMonth = new Date(dd.getFullYear(), dd.getMonth(), 1);
+      render();
+      document.querySelector('[aria-label="Detalle del día"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      break;
+    }
+    case 'go': { S.sel = k; const dd = fromKey(k); S.calMonth = new Date(dd.getFullYear(), dd.getMonth(), 1); S.view = 'cal'; render(); document.querySelector('[aria-label="Detalle del día"]')?.scrollIntoView({ block: 'start' }); break; }
+    case 'badd': if (needReady()) editDay(S.sel, j, l => l.push(nextBlock(l))); break;
+    case 'bdel': if (needReady()) editDay(S.sel, j, l => l.splice(i, 1)); break;
+    case 'off': if (needReady()) setDay(S.sel, j, []); break;
+    case 'reset': if (needReady()) setDay(S.sel, j, null); break;
+    case 'alloff':
+      if (!needReady()) break;
+      for (const jb of jobs()) if (minFor(S.sel, jb.id) > 0) setDay(S.sel, jb.id, []);
+      toast('Día marcado como libre'); break;
+    case 'wkprev': S.weekStart = addDays(S.weekStart, -7); render(); break;
+    case 'wknext': S.weekStart = addDays(S.weekStart, 7); render(); break;
+    case 'wknow': S.weekStart = mondayOf(new Date()); render(); break;
+    case 'mprev': S.mesMonth = new Date(S.mesMonth.getFullYear(), S.mesMonth.getMonth() - 1, 1); render(); break;
+    case 'mnext': S.mesMonth = new Date(S.mesMonth.getFullYear(), S.mesMonth.getMonth() + 1, 1); render(); break;
+    case 'export': exportMonth(); break;
+    case 'hadd': { const wk = S.draft.week[j] = S.draft.week[j] || {}; const l = wk[d] = wk[d] || []; l.push(nextBlock(l)); S.draftDirty = true; render(); break; }
+    case 'hdel': { const l = S.draft.week[j][d]; l.splice(i, 1); if (!l.length) delete S.draft.week[j][d]; S.draftDirty = true; render(); break; }
+    case 'hcopy': {
+      const wk = S.draft.week[j] = S.draft.week[j] || {};
+      for (let n = 2; n <= 5; n++) { if (wk[1]?.length) wk[n] = clone(wk[1]); else delete wk[n]; }
+      S.draftDirty = true; render(); toast('Lunes copiado de martes a viernes'); break;
+    }
+    case 'discard': S.draft = null; S.draftDirty = false; render(); break;
+    case 'savesched': {
+      if (!needReady()) break;
+      const D = S.draft, cfg = clone(S.config);
+      const week = clone(D.week);
+      for (const jid in week) for (const dd in week[jid]) week[jid][dd] = week[jid][dd].filter(x => x.s && x.e);
+      cfg.jobs = clone(D.jobs);
+      if (!cfg.confirmed) cfg.schedules = [{ from: '2000-01-01', week }];
+      else { cfg.schedules = cfg.schedules.filter(s => s.from !== D.from); cfg.schedules.push({ from: D.from, week }); }
+      cfg.confirmed = true;
+      S.config = cfg; S.configStored = true;
+      persist('config', cfg, 0);
+      S.draft = null; S.draftDirty = false;
+      toast('Horario guardado'); render(); break;
+    }
+  }
+});
+
+document.addEventListener('change', e => {
+  const t = e.target, { act, j, f, d } = t.dataset, i = +t.dataset.i;
+  if (act === 'bt') { if (!needReady()) return; editDay(S.sel, j, l => { if (l[i]) l[i][f] = t.value; }); }
+  else if (act === 'ht') { S.draft.week[j][d][i][f] = t.value; S.draftDirty = true; render(); }
+  else if (act === 'from') { S.draft.from = t.value || todayKey(); S.draftDirty = true; render(); }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target, { act, j } = t.dataset;
+  if (act === 'note') { if (Store.ready) setNote(S.sel, t.value.trim()); }
+  else if (act === 'jname' || act === 'jrole') {
+    const jb = S.draft.jobs.find(x => x.id === j);
+    jb[act === 'jname' ? 'name' : 'role'] = t.value;
+    if (!S.draftDirty) { S.draftDirty = true; deferredRender = true; }
+  }
+});
+
+render();
+initStore();
+</script>
