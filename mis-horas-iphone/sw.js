@@ -1,7 +1,7 @@
 // Guarda la app en el iPhone para que abra sin conexión.
 // Al cambiar la app, sube el número de versión para que se actualice.
-const CACHE = 'mis-horas-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
+const CACHE = 'mis-horas-v3';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo-eld.png', './logo-uni.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

@@ -28,7 +28,8 @@
   --accent: #1d3a8a;
   --accent-ink: #ffffff;
   --eld: #c8102e;
-  --uni: #0b8a78;
+  --uni: #7fd18f;
+  --uni-ink: #2e9a4c;
   --warn: #9a6400;
   --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -36,13 +37,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0c1016; --surface: #151b25; --sunk: #1d2531; --ink: #e9edf4; --muted: #95a1b4;
-    --line: #283244; --accent: #8ea8ff; --accent-ink: #0c1016; --eld: #ff5b70; --uni: #33c9b1; --warn: #f0b44c;
+    --line: #283244; --accent: #8ea8ff; --accent-ink: #0c1016; --eld: #ff5b70; --uni: #7fd18f; --uni-ink: #7fd18f; --warn: #f0b44c;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0c1016; --surface: #151b25; --sunk: #1d2531; --ink: #e9edf4; --muted: #95a1b4;
-  --line: #283244; --accent: #8ea8ff; --accent-ink: #0c1016; --eld: #ff5b70; --uni: #33c9b1; --warn: #f0b44c;
+  --line: #283244; --accent: #8ea8ff; --accent-ink: #0c1016; --eld: #ff5b70; --uni: #7fd18f; --uni-ink: #7fd18f; --warn: #f0b44c;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -134,6 +135,15 @@ main {
 .job { border-left: 4px solid var(--c); padding-left: 10px; display: flex; flex-direction: column; gap: 8px; }
 .jh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .jh b { font-weight: 600; }
+.logo { width: 22px; height: 22px; object-fit: contain; flex: none; vertical-align: middle; }
+.logo.uni { border-radius: 5px; }
+.tot .lbl { display: flex; align-items: center; gap: 6px; }
+.tot .lbl span { overflow: hidden; text-overflow: ellipsis; }
+.tot .logo { width: 20px; height: 20px; }
+.card h2 .logo { width: 26px; height: 26px; margin-right: 8px; vertical-align: -4px; }
+.hhead { display: flex; align-items: center; gap: 10px; }
+.hhead .logo { width: 34px; height: 34px; }
+.hhead b { font-family: var(--display); font-size: 20px; font-weight: 700; }
 .jh .jt { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; }
 .tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 99px; background: var(--sunk); color: var(--muted); }
 .tag.mod { color: var(--warn); }
@@ -242,6 +252,8 @@ const DOW = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const DOW_LONG = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const JOB_COLOR = { eld: 'var(--eld)', uni: 'var(--uni)' };
+const JOB_TEXT = { eld: 'var(--eld)', uni: 'var(--uni-ink)' };
+const logo = id => `<img class="logo ${id}" src="logo-${id}.png" alt="" width="22" height="22">`;
 
 const pad = n => String(n).padStart(2, '0');
 const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -269,7 +281,7 @@ function exampleConfig() {
   }
   week.eld[6] = [{ s: '10:00', e: '13:00' }];
   return {
-    v: 1, confirmed: false,
+    v: 1, confirmed: false, startDate: todayKey(),
     jobs: [
       { id: 'eld', name: 'CD Eldense', role: 'Jefe de rendimiento' },
       { id: 'uni', name: 'Unity Sports', role: 'CEO' }
@@ -296,11 +308,14 @@ function scheduleFor(k) {
   for (const s of list) if (s.from <= k) cur = s;
   return cur;
 }
+// Las horas empiezan a contar desde el día en que empezaste a usar la app
+const startKey = () => S.config.startDate || todayKey();
 const dayEntry = k => S.months[monthId(k)]?.days?.[k];
 const isOverridden = (k, j) => Array.isArray(dayEntry(k)?.[j]);
 function blocksFor(k, j) {
   const e = dayEntry(k);
   if (e && Array.isArray(e[j])) return e[j];
+  if (k < startKey()) return [];
   return scheduleFor(k).week[j]?.[isoDow(fromKey(k))] || [];
 }
 const minFor = (k, j) => blocksFor(k, j).reduce((a, b) => a + blockMin(b), 0);
@@ -376,7 +391,12 @@ function saveLocal() {
 function loadLocal() {
   try {
     const raw = localStorage.getItem('mishoras-data');
-    if (raw) { const d = JSON.parse(raw); if (d.config) { S.config = d.config; S.configStored = true; } S.months = d.months || {}; }
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d.config) { S.config = d.config; S.configStored = true; }
+      S.months = d.months || {};
+      if (!S.config.startDate) { S.config.startDate = todayKey(); saveLocal(); }
+    }
   } catch (e) {}
 }
 
@@ -475,8 +495,7 @@ function totalsTiles(stats, mode) {
   return `<div class="totals">${jobs().map(j => {
     const s = stats[j.id];
     const main = mode === 'month' ? s.done : s.planned;
-    const sub = mode === 'month' ? `hasta hoy · ${fmtH(s.planned)} en el mes` : `${s.days} días con horas`;
-    return `<div class="tot" style="--c:${JOB_COLOR[j.id]}"><span class="lbl">${esc(j.name)}</span><b>${hm(main)}<small> h</small></b><span class="sub">${sub}</span></div>`;
+    return `<div class="tot" style="--c:${JOB_COLOR[j.id]}"><span class="lbl">${logo(j.id)}<span>${esc(j.name)}</span></span><b>${hm(main)}<small> h</small></b></div>`;
   }).join('')}</div>`;
 }
 
@@ -492,7 +511,7 @@ function viewCal() {
     const edited = !out && jobs().some(j => isOverridden(k, j.id));
     const cls = ['day', out && 'out', k === tk && 'today', k === S.sel && 'sel', edited && 'edited', !hs.length && 'free'].filter(Boolean).join(' ');
     const label = `${longDate(k)}: ${hs.length ? hs.map(([id, m]) => `${jobs().find(j => j.id === id).name} ${fmtH(m)}`).join(', ') : 'sin horas'}`;
-    cells += `<button class="${cls}" data-act="sel" data-k="${k}" aria-label="${esc(label)}"><span class="n">${d.getDate()}</span>${out ? '' : hs.map(([id, m]) => `<span class="h" style="color:${JOB_COLOR[id]}">${hm(m)}</span>`).join('')}</button>`;
+    cells += `<button class="${cls}" data-act="sel" data-k="${k}" aria-label="${esc(label)}"><span class="n">${d.getDate()}</span>${out ? '' : hs.map(([id, m]) => `<span class="h" style="color:${JOB_TEXT[id]}">${hm(m)}</span>`).join('')}</button>`;
   }
   return `
     ${exampleBanner()}
@@ -518,7 +537,7 @@ function dayDetail(k) {
         <button class="x" data-act="bdel" data-j="${j.id}" data-i="${i}" aria-label="Quitar tramo">×</button>
       </div>`).join('') : '<div class="empty">Sin horas este día.</div>';
     return `<div class="job" style="--c:${JOB_COLOR[j.id]}">
-      <div class="jh"><b>${esc(j.name)}</b>${tag}<span class="jt">${fmtH(m)}</span></div>
+      <div class="jh">${logo(j.id)}<b>${esc(j.name)}</b>${tag}<span class="jt">${fmtH(m)}</span></div>
       ${rows}
       <div class="acts">
         <button class="lbtn add" data-act="badd" data-j="${j.id}">+ Tramo</button>
@@ -568,7 +587,7 @@ function viewSem() {
     <section class="card">
       <div class="big"><b>${hm(total)}</b><span>horas · ${isThis ? title : 'semana'}</span></div>
       <div class="split">${jobs().map(j => `<i style="width:${total ? jt[j.id] / total * 100 : 0}%;background:${JOB_COLOR[j.id]}"></i>`).join('')}</div>
-      <div class="rows">${jobs().map(j => `<div class="row" style="--c:${JOB_COLOR[j.id]}"><span class="sw"></span>${esc(j.name)}<span class="v">${fmtH(jt[j.id])}</span><span class="p">${total ? Math.round(jt[j.id] / total * 100) : 0}%</span></div>`).join('')}</div>
+      <div class="rows">${jobs().map(j => `<div class="row" style="--c:${JOB_COLOR[j.id]}">${logo(j.id)}${esc(j.name)}<span class="v">${fmtH(jt[j.id])}</span><span class="p">${total ? Math.round(jt[j.id] / total * 100) : 0}%</span></div>`).join('')}</div>
     </section>
     <section class="card"><div class="chart">${bars}</div></section>
     <section class="card"><div class="dlist">${list}</div></section>`;
@@ -591,7 +610,7 @@ function viewMes() {
     const s = st[j.id], p = prev[j.id];
     const d = s.planned - p.planned;
     return `<section class="card" style="border-top:4px solid ${JOB_COLOR[j.id]}">
-      <h2>${esc(j.name)}<small>${esc(j.role)}</small></h2>
+      <h2>${logo(j.id)}${esc(j.name)}<small>${esc(j.role)}</small></h2>
       <div class="kv">
         <div><span>${isCurrent ? 'Hechas hasta hoy' : isPast ? 'Horas del mes' : 'Previstas'}</span><b>${fmtH(isCurrent || isPast ? s.done : s.planned)}</b></div>
         <div><span>Total del mes</span><b>${fmtH(s.planned)}</b></div>
@@ -618,7 +637,7 @@ function viewMes() {
     <section class="card">
       <div class="big"><b>${hm(isCurrent ? totDone : totPlanned)}</b><span>${isCurrent ? `h hasta hoy · ${fmtH(totPlanned)} en el mes` : 'horas en total'}</span></div>
       <div class="split">${jobs().map(j => `<i style="width:${totPlanned ? st[j.id].planned / totPlanned * 100 : 0}%;background:${JOB_COLOR[j.id]}"></i>`).join('')}</div>
-      <div class="rows">${jobs().map(j => `<div class="row" style="--c:${JOB_COLOR[j.id]}"><span class="sw"></span>${esc(j.name)}<span class="v">${fmtH(st[j.id].planned)}</span><span class="p">${totPlanned ? Math.round(st[j.id].planned / totPlanned * 100) : 0}%</span></div>`).join('')}</div>
+      <div class="rows">${jobs().map(j => `<div class="row" style="--c:${JOB_COLOR[j.id]}">${logo(j.id)}${esc(j.name)}<span class="v">${fmtH(st[j.id].planned)}</span><span class="p">${totPlanned ? Math.round(st[j.id].planned / totPlanned * 100) : 0}%</span></div>`).join('')}</div>
       <p class="hint">${MESES[(mo + 11) % 12][0].toUpperCase() + MESES[(mo + 11) % 12].slice(1)}: ${fmtH(prevTot)} (${diff === 0 ? 'igual' : (diff > 0 ? '+' : '−') + fmtH(Math.abs(diff))})</p>
     </section>
     ${cards}
@@ -659,6 +678,7 @@ function viewHor() {
       return `<div class="wd"><b>${d}</b><div class="bs">${inner}</div></div>`;
     }).join('');
     return `<section class="card hjob" style="--c:${JOB_COLOR[j.id]}">
+      <div class="hhead">${logo(j.id)}<b>${esc(j.name)}</b></div>
       <div class="hfields">
         <label class="f" for="jn-${j.id}">Trabajo<input id="jn-${j.id}" value="${esc(j.name)}" data-act="jname" data-j="${j.id}"></label>
         <label class="f" for="jr-${j.id}">Puesto<input id="jr-${j.id}" value="${esc(j.role)}" data-act="jrole" data-j="${j.id}"></label>
@@ -804,6 +824,7 @@ document.addEventListener('click', e => {
       if (!cfg.confirmed) cfg.schedules = [{ from: '2000-01-01', week }];
       else { cfg.schedules = cfg.schedules.filter(s => s.from !== D.from); cfg.schedules.push({ from: D.from, week }); }
       cfg.confirmed = true;
+      cfg.startDate = cfg.startDate || todayKey();
       S.config = cfg; S.configStored = true;
       persist('config', cfg, 0);
       S.draft = null; S.draftDirty = false;
